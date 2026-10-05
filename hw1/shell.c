@@ -115,13 +115,30 @@ void process_command(command cmd) {
     // Step 2 (set up arguments in child)
 
     // (redirect input to file if stdin is not empty)	
+    if(cmd.stdin != NULL){
+      int fd = open(cmd.stdin, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+      dup2(fd, STDIN_FILENO);
+      close(fd);
+    }
     // (redirect output to file if stdout is not empty)
-    
+    if(cmd.stdout != NULL){
+      int fd = open(cmd.stdout, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+      dup2(fd, STDOUT_FILENO);
+      close(fd);
+    }
+
+    execvp(cmd.binary_path, cmd.arguments, NULL);
+
     // Step 3 (call execvp to replace child process context)
   } else {
     printf("New child process started %d\n", f);
     // parent process
     // Step 4 (if wait of command is 1, must wait in parent before going on to next command)
+    if(cmd.wait == 1){
+      int status;
+      waitpid(f, &status, 0);
+      printf("Child process %d terminated with exit code %d\n", f, WEXITSTATUS(status));
+    }
     // Step 5 (when child process terminates, print pid of terminal process and exit status)
   }
   /
