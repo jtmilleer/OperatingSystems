@@ -7,7 +7,7 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <fcntl.h>
-
+    
 
 typedef struct {
   char* binary_path;
@@ -109,18 +109,22 @@ void free_command(command cmd){
 
 void process_command(command cmd) {
 	// Step 1 (use fork)
-
+  int f = fork();
+  if(f == 0){
     // child process
-	    // Step 2 (set up arguments in child)
-	    // (redirect input to file if stdin is not empty)	
-	    // (redirect output to file if stdout is not empty)
-			
-	    // Step 3 (call execvp to replace child process context)
-		
-		
-	 // parent process
-		// Step 4 (if wait of command is 1, must wait in parent before going on to next command)
-		// Step 5 (when child process terminates, print pid of terminal process and exit status)
+    // Step 2 (set up arguments in child)
+
+    // (redirect input to file if stdin is not empty)	
+    // (redirect output to file if stdout is not empty)
+    
+    // Step 3 (call execvp to replace child process context)
+  } else {
+    printf("New child process started %d\n", f);
+    // parent process
+    // Step 4 (if wait of command is 1, must wait in parent before going on to next command)
+    // Step 5 (when child process terminates, print pid of terminal process and exit status)
+  }
+  /
 }
 
 
