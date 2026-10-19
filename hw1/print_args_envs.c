@@ -7,7 +7,7 @@ int main(int args, char *argv[], char *env[])
     char *cur_ev = env[nenv];
     
     int nargv = 0; 
-    char *cur_argv = env[nargv];
+    char *cur_argv = argv[nargv];
     while (cur_argv != NULL){
 	printf("%s\n",cur_argv);
        	nargv++;

@@ -1,4 +1,4 @@
-#define _GNU_SOURCE //this is needed to be able to use execvpe 
+#define _GNU_SOURCE //this is needed to be able to use execvpe
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,7 +7,7 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <fcntl.h>
-    
+
 
 typedef struct {
   char* binary_path;
@@ -114,20 +114,28 @@ void process_command(command cmd) {
     // child process
     // Step 2 (set up arguments in child)
 
-    // (redirect input to file if stdin is not empty)	
-    if(cmd.stdin != NULL){
-      int fd = open(cmd.stdin, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    // (redirect input to file if stdin is not empty)
+    if(cmd.stdin[0] != '\0'){
+      int fd = open(cmd.stdin, O_RDONLY);
       dup2(fd, STDIN_FILENO);
       close(fd);
     }
     // (redirect output to file if stdout is not empty)
-    if(cmd.stdout != NULL){
+    if(cmd.stdout[0] != '\0'){
       int fd = open(cmd.stdout, O_WRONLY|O_CREAT|O_TRUNC, 0644);
       dup2(fd, STDOUT_FILENO);
       close(fd);
     }
 
-    execvp(cmd.binary_path, cmd.arguments, NULL);
+    char* myargs[3];
+    int nargs = 0;
+    myargs[nargs++] = cmd.binary_path;
+    if(cmd.arguments[0] != '\0'){
+      myargs[nargs++] = cmd.arguments;
+    }
+    myargs[nargs] = NULL;
+
+    execve(cmd.binary_path, myargs, NULL);
 
     // Step 3 (call execvp to replace child process context)
   } else {
@@ -141,7 +149,6 @@ void process_command(command cmd) {
     }
     // Step 5 (when child process terminates, print pid of terminal process and exit status)
   }
-  /
 }
 
 
@@ -155,8 +162,8 @@ int main(int argc, char *argv[], char* env[]) {
       continue;
     }
 
-    print_parsed_command(parsed_command);
-    
+    // print_parsed_command(parsed_command);
+
     process_command(parsed_command);
     //process_command(...);
     /*
@@ -171,8 +178,14 @@ int main(int argc, char *argv[], char* env[]) {
 
     free_command(parsed_command);
   }
-  
+
   //remember to wait for the termination of all the child processes, regardless of the value of parsed_command.wait
+  
+  int status;
+  pid_t pid;
+  while((pid = waitpid(-1, &status, 0)) > 0){
+    printf("Child process %d terminated with exit code %d\n", pid, WEXITSTATUS(status));
+  }
 
 }
 
