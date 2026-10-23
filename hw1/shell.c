@@ -135,7 +135,9 @@ void process_command(command cmd) {
     }
     myargs[nargs] = NULL;
 
-    execve(cmd.binary_path, myargs, NULL);
+    execv(cmd.binary_path, myargs);
+    printf("execv failed!\n");
+    exit(1);
 
     // Step 3 (call execvp to replace child process context)
   } else {
