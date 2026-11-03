@@ -1,0 +1,30 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{tabularray}
+\usepackage{tikz}
+
+\begin{document}
+\begin{flushleft}
+    \textbf{Homework 4} \\
+    Jordan Miller \\
+    CS:3620 \\
+    \today
+\end{flushleft}
+
+
+\begin{tblr}{colspec={llll}, hlines, vlines}
+    \textbf{Accessed Page} & \textbf{Hit/Miss} & \textbf{Swapped Page}  & \textbf{Current Memory (LRU $\rightarrow$ MRU)}\\
+    0 & Hit & N/A & 1 2 0 \\
+    2 & Hit & N/A & 1 0 2 \\
+    3 & Miss & 1 & 0 2 3 \\
+    1 & Miss & 0 & 2 3 1 \\
+    4 & Miss & 2 & 3 1 4 \\
+    1 & Hit & N/A & 3 4 1 \\
+    0 & Miss & 3 & 4 1 0 \\
+    3 & Miss & 4 & 1 0 3 \\
+\end{tblr}
+
+
+\end{document}
