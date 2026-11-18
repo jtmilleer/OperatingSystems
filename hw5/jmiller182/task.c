@@ -19,6 +19,10 @@ unsigned int NSOLUTIONS = 8;
 unsigned short found_solutions = 0;
 unsigned long* solutions;
 
+//lock protecting found_solutions and solutions
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+unsigned short nthreads_global = 1;
+
 unsigned short divisibility_check(unsigned long n){
     //very not efficient algorithm
     unsigned long i;
@@ -53,36 +57,62 @@ short try_solution(unsigned short challenge, unsigned long attempted_solution){
 void* worker_thread_function(void *tinput_void){
     tinput_t* tinput = (tinput_t*) tinput_void;
 
-    unsigned long start = 0;
-    unsigned long end = start + 1000000000l;
+    //split [0, 1000000000) into nthreads distinct pieces, one per thread
+    unsigned long chunk = 1000000000l / nthreads_global;
+    unsigned long start = chunk * tinput->tid;
+    unsigned long end = start + chunk;
+    if(tinput->tid == nthreads_global - 1){
+        end = 1000000000l;
+    }
+
     for(unsigned long attempted_solution=start; attempted_solution<end; attempted_solution++){
-        
+
         //condition1: sha256(attempted_solution) == challenge
         if(try_solution(tinput->challenge, attempted_solution)){
             //condition2: the last digit must be different in all the solutions
+            pthread_mutex_lock(&lock);
+            if(found_solutions >= NSOLUTIONS){
+                //another thread already finished the challenge
+                pthread_mutex_unlock(&lock);
+                return NULL;
+            }
             short bad_solution = 0;
             for(int i=0;i<found_solutions;i++){
                 if(attempted_solution%10 == solutions[i]%10){
                     bad_solution = 1;
                 }
             }
+            pthread_mutex_unlock(&lock);
             if(bad_solution){
                 continue;
             }
 
             //condition3: no solution should be divisible by any number in the range [1000000, 1500000]
+            //this is slow so we do it without holding the lock
             if(!divisibility_check(attempted_solution)){
                 continue;
             }
 
-            solutions[found_solutions] = attempted_solution;
-            found_solutions++;
-
-            if(found_solutions==NSOLUTIONS){
-                return NULL;
+            pthread_mutex_lock(&lock);
+            //check condition2 again, another thread may have added a solution
+            //with the same last digit while we were doing condition3
+            bad_solution = 0;
+            for(int i=0;i<found_solutions;i++){
+                if(attempted_solution%10 == solutions[i]%10){
+                    bad_solution = 1;
+                }
             }
+            if(found_solutions >= NSOLUTIONS){
+                bad_solution = 1;
+            }
+            if(!bad_solution){
+                solutions[found_solutions] = attempted_solution;
+                found_solutions++;
+            }
+            pthread_mutex_unlock(&lock);
         }
     }
+    return NULL;
 }
 
 
@@ -91,6 +121,7 @@ void solve_one_challenge(unsigned short challenge, unsigned short nthread){
     tinput_t inputs[nthread];
 
     found_solutions = 0;
+    nthreads_global = nthread;
     solutions = (unsigned long*) malloc(NSOLUTIONS * (sizeof(unsigned long)));
     for(int i=0; i<NSOLUTIONS; i++){
         solutions[i] = 0;
